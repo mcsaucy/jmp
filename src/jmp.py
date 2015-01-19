@@ -32,6 +32,46 @@ def redir(target):
 #    """
 #    return str(request.cookies.items())
 
+@APP.route("/forward/<shorty>")
+def forward(shorty):
+    """
+    A simple method to look up a shorty link's target longfellow
+    """
+    try:
+        conn = sqlite3.connect('example.db')
+        crsr = conn.cursor()
+        crsr.execute(""" SELECT longfellow FROM links
+                         WHERE shorty=? ORDER BY id """, (shorty,))
+        ret = crsr.fetchall()
+
+        conn.close()
+        return json.dumps([{"success" : True,
+                            "results" : ret}])
+    except sqlite3.Error as exc:
+        return json.dumps([{"success" : False,
+                            "error" : exc.args}])
+
+
+@APP.route("/reverse/<longfellow>")
+def reverse(longfellow):
+    """
+    A simple method to look up a longfellow link's shortys
+    """
+    try:
+        conn = sqlite3.connect('example.db')
+        crsr = conn.cursor()
+        crsr.execute(""" SELECT shorty FROM links
+                         WHERE longfellow=? ORDER BY id """, (longfellow,))
+        ret = crsr.fetchall()
+
+        conn.close()
+        return json.dumps([{"success" : True,
+                            "results" : ret}])
+    except sqlite3.Error as exc:
+        return json.dumps([{"success" : False,
+                            "error" : exc.args}])
+
+
 @APP.route("/q/<db_query>") #TODO: remove this route entirely
 def query(db_query):
     """
@@ -62,7 +102,7 @@ def db_init():
         crsr = conn.cursor()
         crsr.execute("""CREATE TABLE links (
                         id INTEGER PRIMARY KEY AUTOINCREMENT,
-                        short TEXT, target TEXT )""")
+                        shorty TEXT, longfellow TEXT )""")
         conn.close()
         return json.dumps([{"success" : True}])
     except sqlite3.Error as exc:
