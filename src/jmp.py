@@ -10,14 +10,6 @@ import sqlite3, json
 
 APP = Flask(__name__)
 
-
-@APP.route("/")
-def hello():
-    """
-    A simple Hello World route
-    """
-    return "Hello World!"
-
 @APP.route("/redir/<target>")
 def redir(target):
     """
@@ -71,10 +63,35 @@ def reverse(longfellow):
         return json.dumps([{"success" : False,
                             "error" : exc.args}])
 
+@APP.route("/new")
+def add_link():
+    """
+    A method to add an entry to the links table
+    """
+    #XXX: AUTHENTICATE FOR THIS METHOD
+    longfellow = request.args.get("long", None)
+    shorty = request.args.get("short", None)
+    #owner = #TODO: ... however I get the user's identity ...
+    try:
+        conn = sqlite3.connect('example.db')
+        crsr = conn.cursor()
+        #TODO: also insert OWNER into the table... once we support that
+        crsr.execute(""" INSERT INTO links (shorty, longfellow)
+                         VALUES (?,?) """, (shorty, longfellow))
+        ret = crsr.fetchall()
+
+        conn.close()
+        return json.dumps([{"success" : True,
+                            "results" : ret}])
+    except sqlite3.Error as exc:
+        return json.dumps([{"success" : False,
+                            "error" : exc.args}])
+
 @APP.route("/query")
 def lookup():
     """
-    A generalized lookup method for entries in the links table.
+    A generalized lookup wrapper method for entries in the links table based on
+    request arguments.
 
     Looks up a row in the links tables and returns the columns in the following
     manner:
@@ -93,6 +110,13 @@ def lookup():
 
     if shorty == None and longfellow == None:
         raise KeyError
+
+    return _lookup(shorty, longfellow)
+
+def _lookup(shorty, longfellow):
+    """
+    The muscle behind the /query route and, by extension, the lookup method
+    """
     try:
         conn = sqlite3.connect('example.db')
         crsr = conn.cursor()
