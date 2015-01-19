@@ -24,45 +24,6 @@ def redir(target):
 #    """
 #    return str(request.cookies.items())
 
-@APP.route("/forward/<shorty>") #TODO: have this wrap a plugin method
-def forward(shorty):
-    """
-    A simple method to look up a shorty link's target longfellow
-    """
-    try:
-        conn = sqlite3.connect('example.db')
-        crsr = conn.cursor()
-        crsr.execute(""" SELECT longfellow FROM links
-                         WHERE shorty=? ORDER BY id """, (shorty,))
-        ret = crsr.fetchall()
-
-        conn.close()
-        return json.dumps([{"success" : True,
-                            "results" : ret}])
-    except sqlite3.Error as exc:
-        return json.dumps([{"success" : False,
-                            "error" : exc.args}])
-
-
-@APP.route("/reverse/<longfellow>") #TODO: have this wrap a plugin method
-def reverse(longfellow):
-    """
-    A simple method to look up a longfellow link's shortys
-    """
-    try:
-        conn = sqlite3.connect('example.db')
-        crsr = conn.cursor()
-        crsr.execute(""" SELECT shorty FROM links
-                         WHERE longfellow=? ORDER BY id """, (longfellow,))
-        ret = crsr.fetchall()
-
-        conn.close()
-        return json.dumps([{"success" : True,
-                            "results" : ret}])
-    except sqlite3.Error as exc:
-        return json.dumps([{"success" : False,
-                            "error" : exc.args}])
-
 @APP.route("/new")
 def add_link():
     """
