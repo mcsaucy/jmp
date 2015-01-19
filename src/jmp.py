@@ -3,27 +3,9 @@
 """
 The API component the JMP URL shortener
 
-Database tables needed:
-    - links table
-        + link ID -- primary, autoinc
-        + short link
-        + full link
-        + owner ID
-    - owner table
-        + owner ID -- primary, autoinc
-        + owner entry UUID
-        + count of existing links (for quota purposes)
-
-TODO:
-    - add config file reader (also, define config schema; something simple)
-        + consider OLC
-    - detach database logic to allow for SQL database plugins
-        + create sqlite plugin
-    - auto-create database tables if they don't exist
-    - require webauth login
 """
 
-from flask import Flask, redirect
+from flask import Flask, redirect, request
 import sqlite3, json
 
 APP = Flask(__name__)
@@ -43,7 +25,14 @@ def redir(target):
     """
     return redirect("http://{0}".format(target), code=302)
 
-@APP.route("/q/<db_query>")
+#@APP.route("/cookie_dump") #XXX: nuke this function when it's no longer useful
+#def cookie_dump():
+#    """
+#    Take a look into the cookie jar. None of this is saved.
+#    """
+#    return str(request.cookies.items())
+
+@APP.route("/q/<db_query>") #TODO: remove this route entirely
 def query(db_query):
     """
     A completely insecure, totally poor practice DB debugging method
@@ -63,7 +52,7 @@ def query(db_query):
         return json.dumps([{"success" : False,
                             "error" : exc.args}])
 
-@APP.route("/q_init")
+@APP.route("/q_init") #TODO: kill this route with fire
 def db_init():
     """
     Initialize our database
