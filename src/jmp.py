@@ -9,6 +9,7 @@ from flask import Flask, redirect, request
 import sqlite3, json
 
 APP = Flask(__name__)
+DB_NAME = "jmp.db"
 
 @APP.route("/redir/<target>")
 def redir(target):
@@ -34,7 +35,7 @@ def add_link():
     shorty = request.args.get("short", None)
     #owner = #TODO: ... however I get the user's identity ...
     try:
-        conn = sqlite3.connect('example.db')
+        conn = sqlite3.connect(DB_NAME)
         crsr = conn.cursor()
         #TODO: also insert OWNER into the table... once we support that
         crsr.execute(""" INSERT INTO links (shorty, longfellow)
@@ -81,7 +82,7 @@ def _lookup(shorty, longfellow):
     The muscle behind the /query route and, by extension, the lookup method
     """
     try:
-        conn = sqlite3.connect('example.db')
+        conn = sqlite3.connect(DB_NAME)
         crsr = conn.cursor()
 
         ret = ()
@@ -121,7 +122,7 @@ def query(db_query):
     A completely insecure, totally poor practice DB debugging method
     """
     try:
-        conn = sqlite3.connect('example.db')
+        conn = sqlite3.connect(DB_NAME)
         crsr = conn.cursor()
         crsr.execute(db_query) #XXX: HOLY SHITBALLS THIS IS INSECURE
         conn.commit()
@@ -143,7 +144,7 @@ def db_init():
     This shouldn't really exist, but it does for dev purposes
     """
     try:
-        conn = sqlite3.connect('example.db')
+        conn = sqlite3.connect(DB_NAME)
         crsr = conn.cursor()
         crsr.execute("""CREATE TABLE links (
                         id INTEGER PRIMARY KEY AUTOINCREMENT,
