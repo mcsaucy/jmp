@@ -39,8 +39,10 @@ def add_link():
         #TODO: also insert OWNER into the table... once we support that
         crsr.execute(""" INSERT INTO links (shorty, longfellow)
                          VALUES (?,?) """, (shorty, longfellow))
+
         ret = crsr.fetchall()
 
+        conn.commit()
         conn.close()
         return json.dumps([{"success" : True,
                             "results" : ret}])
@@ -136,7 +138,9 @@ def query(db_query):
 @APP.route("/q_init") #TODO: kill this route with fire
 def db_init():
     """
-    Initialize our database
+    Initialize our database.
+
+    This shouldn't really exist, but it does for dev purposes
     """
     try:
         conn = sqlite3.connect('example.db')
