@@ -32,7 +32,7 @@ def redir(target):
 #    """
 #    return str(request.cookies.items())
 
-@APP.route("/forward/<shorty>")
+@APP.route("/forward/<shorty>") #TODO: have this wrap a plugin method
 def forward(shorty):
     """
     A simple method to look up a shorty link's target longfellow
@@ -52,7 +52,7 @@ def forward(shorty):
                             "error" : exc.args}])
 
 
-@APP.route("/reverse/<longfellow>")
+@APP.route("/reverse/<longfellow>") #TODO: have this wrap a plugin method
 def reverse(longfellow):
     """
     A simple method to look up a longfellow link's shortys
@@ -71,6 +71,47 @@ def reverse(longfellow):
         return json.dumps([{"success" : False,
                             "error" : exc.args}])
 
+@APP.route("/query")
+def lookup():
+    longfellow = request.args.get("long", None)
+    shorty = request.args.get("short", None)
+
+    if shorty == None and longfellow == None:
+        raise KeyError
+    try:
+        conn = sqlite3.connect('example.db')
+        crsr = conn.cursor()
+
+        ret = ()
+
+        if longfellow != None and shorty != None:
+            crsr.execute(""" SELECT id FROM links
+                             WHERE longfellow=? AND shorty=?
+                             ORDER BY id """, (longfellow, shorty))
+            tmp = crsr.fetchone()
+            if tmp != None:
+                ret = {"id" : tmp[0]}
+        elif longfellow != None:
+            crsr.execute(""" SELECT id, shorty FROM links
+                             WHERE longfellow=?
+                             ORDER BY id """, (longfellow,))
+            tmp = crsr.fetchone()
+            if tmp != None:
+                ret = {"id" : tmp[0], "shorty" : tmp[1]}
+        else:
+            crsr.execute(""" SELECT id, longfellow FROM links
+                             WHERE shorty=?
+                             ORDER BY id """, (shorty,))
+            tmp = crsr.fetchone()
+            if tmp != None:
+                ret = {"id" : tmp[0], "longfellow" : tmp[1]}
+
+        conn.close()
+        return json.dumps([{"success" : True,
+                            "results" : ret}])
+    except sqlite3.Error as exc:
+        return json.dumps([{"success" : False,
+                            "error" : exc.args}])
 
 @APP.route("/q/<db_query>") #TODO: remove this route entirely
 def query(db_query):
