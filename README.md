@@ -6,7 +6,7 @@ A URL shortener for the rest of us.
 + simple config file
 + robust, underlying API
 + swappable frontend
-+ 
++ be able to webauth-protect links?
 
 ## Workflow ##
 + user creates a JMP link
@@ -26,7 +26,7 @@ A URL shortener for the rest of us.
         + owner ID
     - owner table
         + owner ID -- primary, autoinc
-        + owner entry UUID
+        + owner entry UUID --> better yet, a SHA-512 hash of it
         + count of existing links (for quota purposes)
 
 ### TODO: ###
