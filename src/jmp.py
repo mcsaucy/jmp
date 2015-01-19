@@ -73,6 +73,21 @@ def reverse(longfellow):
 
 @APP.route("/query")
 def lookup():
+    """
+    A generalized lookup method for entries in the links table.
+
+    Looks up a row in the links tables and returns the columns in the following
+    manner:
+
+    If given 'short' and 'long', then return an ID.
+
+    If just given 'short', then return a longfellow and an ID.
+
+    If just given 'long', then return a shorty and an ID.
+
+    If given nothing, explode with a key error.
+    """
+
     longfellow = request.args.get("long", None)
     shorty = request.args.get("short", None)
 
