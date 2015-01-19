@@ -28,18 +28,55 @@ def redir(target):
 @APP.route("/new")
 def add_link():
     """
-    A method to add an entry to the links table
+    A method to add an entry to the links table.
+
+    If shorty and longfellow aren't provided, throw a KeyError because why not?
     """
     #XXX: AUTHENTICATE FOR THIS METHOD
     longfellow = request.args.get("long", None)
     shorty = request.args.get("short", None)
     #owner = #TODO: ... however I get the user's identity ...
+    if shorty == None or longfellow == None:
+        raise KeyError
+
     try:
         conn = sqlite3.connect(DB_NAME)
         crsr = conn.cursor()
         #TODO: also insert OWNER into the table... once we support that
         crsr.execute(""" INSERT INTO links (shorty, longfellow)
                          VALUES (?,?) """, (shorty, longfellow))
+
+        ret = crsr.fetchall()
+
+        conn.commit()
+        conn.close()
+        return json.dumps([{"success" : True,
+                            "results" : ret}])
+    except sqlite3.Error as exc:
+        return json.dumps([{"success" : False,
+                            "error" : exc.args}])
+
+@APP.route("/delete")
+def rm_link():
+    """
+    A method to remove an entry from the links table.
+
+    If shorty and longfellow aren't provided, throw a KeyError because why not?
+    """
+    #XXX: AUTHENTICATE FOR THIS METHOD
+    longfellow = request.args.get("long", None)
+    shorty = request.args.get("short", None)
+    #user = #TODO: ... however I get the user's identity ...
+    if shorty == None or longfellow == None:
+        raise KeyError
+
+    try:
+        conn = sqlite3.connect(DB_NAME)
+        crsr = conn.cursor()
+        #TODO: verify that the user owns this link
+        crsr.execute(""" DELETE FROM links
+                          WHERE shorty=?
+                          AND longfellow=? """, (shorty, longfellow))
 
         ret = crsr.fetchall()
 
