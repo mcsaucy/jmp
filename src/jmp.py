@@ -1,7 +1,7 @@
 #!/usr/bin/python
 
 """
-The API component the JMP URL shortener
+The API component of the JMP URL shortener
 
 """
 
@@ -109,36 +109,37 @@ def lookup():
     longfellow = request.args.get("long", None)
     shorty = request.args.get("short", None)
 
-    if shorty == None and longfellow == None:
-        raise KeyError
-
-    return _lookup(shorty, longfellow)
+    return json.dumps(_lookup(shorty, longfellow))
 
 def _lookup(shorty, longfellow):
     """
     The muscle behind the /query route and, by extension, the lookup method
     """
+
+    if shorty == None and longfellow == None: #TODO: throw bad request
+        raise KeyError
+
     try:
         conn = sqlite3.connect(DB_NAME)
         crsr = conn.cursor()
 
         ret = ()
 
-        if longfellow != None and shorty != None:
+        if longfellow != None and shorty != None: #look up an ID
             crsr.execute(""" SELECT id FROM links
                              WHERE longfellow=? AND shorty=?
                              ORDER BY id """, (longfellow, shorty))
             tmp = crsr.fetchone()
             if tmp != None:
                 ret = {"id" : tmp[0]}
-        elif longfellow != None:
+        elif longfellow != None: #look up an ID, shorty
             crsr.execute(""" SELECT id, shorty FROM links
                              WHERE longfellow=?
                              ORDER BY id """, (longfellow,))
             tmp = crsr.fetchone()
             if tmp != None:
                 ret = {"id" : tmp[0], "shorty" : tmp[1]}
-        else:
+        else: #look up an ID, longfellow
             crsr.execute(""" SELECT id, longfellow FROM links
                              WHERE shorty=?
                              ORDER BY id """, (shorty,))
@@ -147,11 +148,11 @@ def _lookup(shorty, longfellow):
                 ret = {"id" : tmp[0], "longfellow" : tmp[1]}
 
         conn.close()
-        return json.dumps([{"success" : True,
-                            "results" : ret}])
+        return [{"success" : True,
+                 "results" : ret}]
     except sqlite3.Error as exc:
-        return json.dumps([{"success" : False,
-                            "error" : exc.args}])
+        return [{"success" : False,
+                 "error" : exc.args}]
 
 @APP.route("/q/<db_query>") #TODO: remove this route entirely
 def query(db_query):
