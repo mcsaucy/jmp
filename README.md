@@ -47,3 +47,6 @@ A URL shortener for the rest of us.
     - old-fashioned rate-limiting for creation
         + would need to track per user
         + implementation CANNOT impact performance negatively
+    - verify longfellows are valid links
+        + potentially doa HEAD request and leave it at that
+        + maybe just have it pass a regex to allow creation of intranet links
