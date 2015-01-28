@@ -5,11 +5,35 @@ The API component of the JMP URL shortener
 
 """
 
+from sqlalchemy import Column, String, Integer
+from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy import exc
+from sqlalchemy.orm import sessionmaker
+from sqlalchemy import create_engine
+
 from flask import Flask, redirect, request
 import sqlite3, json
 
+BASE = declarative_base()
+
+class Link(BASE):
+    """
+    A simple schema for a Link table
+    """
+
+    __tablename__ = "links"
+    link_id = Column(Integer, primary_key=True, autoincrement=True)
+    shorty = Column(String(256), nullable=False, unique=True)
+    longfellow = Column(String(2048), nullable=False)
+
 APP = Flask(__name__)
+ENGINE = create_engine("sqlite:///jmp.db")
+BASE.metadata.create_all(ENGINE)
+
+DBSESSION = sessionmaker(bind=ENGINE)
+
 DB_NAME = "jmp.db"
+
 
 @APP.route("/redir/<target>")
 def redir(target):
@@ -40,21 +64,15 @@ def add_link():
         raise KeyError
 
     try:
-        conn = sqlite3.connect(DB_NAME)
-        crsr = conn.cursor()
-        #TODO: also insert OWNER into the table... once we support that
-        crsr.execute(""" INSERT INTO links (shorty, longfellow)
-                         VALUES (?,?) """, (shorty, longfellow))
+        session = DBSESSION()
+        new_link = Link(shorty=shorty, longfellow=longfellow)
+        session.add(new_link)
+        session.commit()
 
-        ret = crsr.fetchall()
-
-        conn.commit()
-        conn.close()
-        return json.dumps([{"success" : True,
-                            "results" : ret}])
-    except sqlite3.Error as exc:
+        return json.dumps([{"success" : True}])
+    except exc.IntegrityError as exception:
         return json.dumps([{"success" : False,
-                            "error" : exc.args}])
+            "error" : exception.args}])
 
 @APP.route("/delete")
 def rm_link():
