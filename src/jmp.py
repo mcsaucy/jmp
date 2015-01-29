@@ -185,24 +185,5 @@ def query(db_query):
         return json.dumps([{"success" : False,
                             "error" : exc.args}])
 
-@APP.route("/q_init") #TODO: kill this route with fire
-def db_init():
-    """
-    Initialize our database.
-
-    This shouldn't really exist, but it does for dev purposes
-    """
-    try:
-        conn = sqlite3.connect(DB_NAME)
-        crsr = conn.cursor()
-        crsr.execute("""CREATE TABLE links (
-                        id INTEGER PRIMARY KEY AUTOINCREMENT,
-                        shorty TEXT, longfellow TEXT )""")
-        conn.close()
-        return json.dumps([{"success" : True}])
-    except sqlite3.Error as exc:
-        return json.dumps([{"success" : False,
-                            "error" : exc.args}])
-
 if __name__ == "__main__":
     APP.run(debug=True)
