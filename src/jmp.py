@@ -103,7 +103,7 @@ def rm_link():
         session.commit()
         return json.dumps([{"success" : True}])
 
-    except sqlite3.Error as exception:
+    except exc.SQLAlchemyError as exception:
         return json.dumps([{"success" : False,
             "error" : exception.args}])
 
@@ -139,39 +139,31 @@ def _lookup(shorty, longfellow):
         raise KeyError
 
     try:
-        conn = sqlite3.connect(DB_NAME)
-        crsr = conn.cursor()
-
+        session = DBSESSION()
         ret = ()
 
-        if longfellow != None and shorty != None: #look up an ID
-            crsr.execute(""" SELECT id FROM links
-                             WHERE longfellow=? AND shorty=?
-                             ORDER BY id """, (longfellow, shorty))
-            tmp = crsr.fetchone()
-            if tmp != None:
-                ret = {"id" : tmp[0]}
-        elif longfellow != None: #look up an ID, shorty
-            crsr.execute(""" SELECT id, shorty FROM links
-                             WHERE longfellow=?
-                             ORDER BY id """, (longfellow,))
-            tmp = crsr.fetchone()
-            if tmp != None:
-                ret = {"id" : tmp[0], "shorty" : tmp[1]}
-        else: #look up an ID, longfellow
-            crsr.execute(""" SELECT id, longfellow FROM links
-                             WHERE shorty=?
-                             ORDER BY id """, (shorty,))
-            tmp = crsr.fetchone()
-            if tmp != None:
-                ret = {"id" : tmp[0], "longfellow" : tmp[1]}
+        if longfellow != None and shorty != None:
+            ret = session.query(Link).filter_by(
+                    shorty=shorty, longfellow=longfellow).all()
 
-        conn.close()
+        elif longfellow != None:
+            ret = session.query(Link).filter_by(
+                    longfellow=longfellow).all()
+
+        elif shorty != None:
+            ret = session.query(Link).filter_by(
+                    shorty=shorty).all()
+
+        serializable_ret = [(link.link_id,
+                             link.shorty,
+                             link.longfellow
+                            ) for link in ret]
+
         return [{"success" : True,
-                 "results" : ret}]
-    except sqlite3.Error as exc:
+                 "results" : serializable_ret}]
+    except exc.SQLAlchemyError as exception:
         return [{"success" : False,
-                 "error" : exc.args}]
+            "error" : exception.args}]
 
 @APP.route("/q/<db_query>") #TODO: remove this route entirely
 def query(db_query):
