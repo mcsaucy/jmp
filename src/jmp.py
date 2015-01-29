@@ -89,22 +89,23 @@ def rm_link():
         raise KeyError
 
     try:
-        conn = sqlite3.connect(DB_NAME)
-        crsr = conn.cursor()
+        session = DBSESSION()
         #TODO: verify that the user owns this link
-        crsr.execute(""" DELETE FROM links
-                          WHERE shorty=?
-                          AND longfellow=? """, (shorty, longfellow))
+        #    : ... this may be possible by simply including the username
+        #    :     in the schema and querying based on that
 
-        ret = crsr.fetchall()
+        matching_links = session.query(Link).filter_by(
+                shorty=shorty, longfellow=longfellow)
 
-        conn.commit()
-        conn.close()
-        return json.dumps([{"success" : True,
-                            "results" : ret}])
-    except sqlite3.Error as exc:
+        for link in matching_links:
+            session.delete(link)
+
+        session.commit()
+        return json.dumps([{"success" : True}])
+
+    except sqlite3.Error as exception:
         return json.dumps([{"success" : False,
-                            "error" : exc.args}])
+            "error" : exception.args}])
 
 @APP.route("/query")
 def lookup():
