@@ -12,7 +12,7 @@ from sqlalchemy.orm import sessionmaker
 from sqlalchemy import create_engine
 
 from flask import Flask, redirect, request
-import sqlite3, json
+import json
 
 BASE = declarative_base()
 
@@ -27,13 +27,11 @@ class Link(BASE):
     longfellow = Column(String(2048), nullable=False)
 
 APP = Flask(__name__)
-ENGINE = create_engine("sqlite:///jmp.db")
+
+ENGINE = create_engine("sqlite:///jmp.db") #read this in from config
 BASE.metadata.create_all(ENGINE)
 
 DBSESSION = sessionmaker(bind=ENGINE)
-
-DB_NAME = "jmp.db"
-
 
 @APP.route("/redir/<target>")
 def redir(target):
@@ -85,7 +83,7 @@ def rm_link():
     longfellow = request.args.get("long", None)
     shorty = request.args.get("short", None)
     #user = #TODO: ... however I get the user's identity ...
-    if shorty == None or longfellow == None:
+    if shorty == None or longfellow == None: #throw bad request
         raise KeyError
 
     try:
