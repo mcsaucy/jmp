@@ -165,25 +165,25 @@ def _lookup(shorty, longfellow):
         return [{"success" : False,
             "error" : exception.args}]
 
-@APP.route("/q/<db_query>") #TODO: remove this route entirely
-def query(db_query):
+@APP.route("/dump") #TODO: remove this route entirely
+def dump():
     """
-    A completely insecure, totally poor practice DB debugging method
+    Dump the DB contents. Not really a great thing to have in prod...
     """
     try:
-        conn = sqlite3.connect(DB_NAME)
-        crsr = conn.cursor()
-        crsr.execute(db_query) #XXX: HOLY SHITBALLS THIS IS INSECURE
-        conn.commit()
+        session = DBSESSION()
+        ret = session.query(Link).all()
 
-        ret = crsr.fetchall()
+        serializable_ret = [(link.link_id,
+                             link.shorty,
+                             link.longfellow
+                            ) for link in ret]
 
-        conn.close()
         return json.dumps([{"success" : True,
-                            "results" : ret}])
-    except sqlite3.Error as exc:
+                 "results" : serializable_ret}])
+    except exc.SQLAlchemyError as exception:
         return json.dumps([{"success" : False,
-                            "error" : exc.args}])
+            "error" : exception.args}])
 
 if __name__ == "__main__":
     APP.run(debug=True)
