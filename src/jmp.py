@@ -63,7 +63,7 @@ def req_auth_api(func):
 
         if entry_uuid == None or username == None:
             return json.dumps([{"success" : False,
-                "error" : "Authentication required"}])
+                "error" : "Authentication required"}]), 401
         return func(*args, **kwargs)
     return auth_decor
 
@@ -120,7 +120,7 @@ def redir(short):
     rows = _lookup(shorty=short, longfellow=None)
     if rows[0]["success"] == False or len(rows[0]["results"]) == 0:
         return json.dumps([{"success" : False,
-            "error" : "Nonexistent short. You should create it!"}])
+            "error" : "Nonexistent short. You should create it!"}]), 404
 
     longfellow = rows[0]["results"][0][2] #TODO: this is fugly. fix it.
     return redirect(longfellow, code=302)
@@ -145,21 +145,21 @@ def add_link():
 
     if entry_uuid == None:
         return json.dumps([{"success" : False,
-            "error" : "That's weird. You lack an entry-uuid..."}])
+            "error" : "That's weird. You lack an entry-uuid..."}]), 418
 
     owner = hash_and_salt(entry_uuid)
 
     if not _verify_short(shorty):
         return json.dumps([{"success" : False,
-            "error" : "Invalid short"}])
+            "error" : "Invalid short"}]), 400
 
     if not _verify_long(longfellow):
         return json.dumps([{"success" : False,
-            "error" : "Invalid URL"}])
+            "error" : "Invalid URL"}]), 400
 
     if shorty == None or longfellow == None:
         return json.dumps([{"success" : False,
-            "error" : "Incomplete request"}])
+            "error" : "Incomplete request"}]), 400
 
     try:
         session = DBSESSION()
@@ -170,7 +170,7 @@ def add_link():
         return json.dumps([{"success" : True}])
     except exc.IntegrityError as exception:
         return json.dumps([{"success" : False,
-            "error" : exception.args}])
+            "error" : exception.args}]), 400
 
 @APP.route("/api/delete")
 @req_auth_api
@@ -184,13 +184,13 @@ def rm_link():
 
     if shorty == None or longfellow == None:
         return json.dumps([{"success" : False,
-            "error" : "Incomplete request"}])
+            "error" : "Incomplete request"}]), 400
 
     entry_uuid = request.environ.get("X-WEBAUTH-ENTRYUUID", None)
 
     if entry_uuid == None:
         return json.dumps([{"success" : False,
-            "error" : "That's weird. You lack an entry-uuid..."}])
+            "error" : "That's weird. You lack an entry-uuid..."}]), 418
 
     owner = hash_and_salt(entry_uuid)
 
@@ -213,18 +213,18 @@ def rm_link():
             #Just in case we ever want to extend the schema to allow separation
             #of privately and publicly shared links
             return json.dumps([{"success" : False,
-                "error" : "Link not found"}])
+                "error" : "Link not found"}]), 404
 
         if not link_deleted:
             return json.dumps([{"success" : False,
-                "error" : "Keep your hands to yourself"}])
+                "error" : "Keep your hands to yourself"}]), 403
 
         session.commit()
         return json.dumps([{"success" : True}])
 
     except exc.SQLAlchemyError as exception:
         return json.dumps([{"success" : False,
-            "error" : exception.args}])
+            "error" : exception.args}]), 500
 
 @APP.route("/api/query")
 def lookup():
@@ -268,10 +268,10 @@ def _lookup(shorty, longfellow):
                             ) for link in ret]
 
         return [{"success" : True,
-                 "results" : serializable_ret}]
+                 "results" : serializable_ret}], 200
     except exc.SQLAlchemyError as exception:
         return [{"success" : False,
-            "error" : exception.args}]
+            "error" : exception.args}], 500
 
 @APP.route("/api/dump") #TODO: remove this route entirely
 def dump():
@@ -291,7 +291,7 @@ def dump():
                  "results" : serializable_ret}])
     except exc.SQLAlchemyError as exception:
         return json.dumps([{"success" : False,
-            "error" : exception.args}])
+            "error" : exception.args}]), 500
 
 if __name__ == "__main__":
     APP.run(debug=True)
