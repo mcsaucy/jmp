@@ -5,6 +5,9 @@ The API component of the JMP URL shortener
 
 """
 
+from functools import wraps
+from hashlib import sha256
+
 from sqlalchemy import Column, String, Integer
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy import exc
@@ -40,6 +43,25 @@ MAX_LONGFELLOW_SIZE = 2048
 MAX_SHORT_SIZE = 140
 
 DBSESSION = sessionmaker(bind=ENGINE)
+
+def req_auth_api(func):
+    """
+    A simple auth wrapper for API calls
+    """
+    @wraps(func)
+    def auth_decor(*args, **kwargs):
+        """
+        Pull in entry UUID and username from webauth. If either isn't provided,
+        bail out.
+        """
+
+        entry_uuid = request.environ.get("X-WEBAUTH-ENTRYUUID", None)
+        username = request.environ.get("X-WEBAUTH-USERNAME", None)
+
+        if entry_uuid == None or username == None:
+            return "NOPE" #TODO: do something more intelligent...
+        return func(*args, **kwargs)
+    return auth_decor
 
 def _verify_long(longfellow):
     """
