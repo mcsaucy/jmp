@@ -31,14 +31,43 @@ APP = Flask(__name__)
 ENGINE = create_engine("sqlite:///jmp.db") #read this in from config
 BASE.metadata.create_all(ENGINE)
 
+ALLOWED_PROTOCOLS = ("http://", "https://", "ftp://",)
+MAX_URL_SIZE = 2048
+
 DBSESSION = sessionmaker(bind=ENGINE)
 
-@APP.route("/redir/<target>")
-def redir(target):
+def _verify_url(url):
     """
-    A simple redirection route
+    Verify a URL to be valid and of a supported protocol
     """
-    return redirect("http://{0}".format(target), code=302)
+
+    if len(url) > MAX_URL_SIZE:
+        return False
+
+    supported_proto = False
+
+    for proto in ALLOWED_PROTOCOLS:
+        if url.startswith(proto):
+            supported_proto = True
+            break
+
+    if not supported_proto:
+        return False
+
+    return True
+
+
+@APP.route("/<short>")
+def redir(short):
+    """
+    Redirect the user to a longfellow given a shorty
+    """
+    rows = _lookup(shorty=short, longfellow=None)
+    if len(rows) == 0:
+        raise KeyError #TODO: instead, redirect to creation page
+
+    longfellow = rows[0]["results"][0][2] #TODO: this is fugly. fix it.
+    return redirect(longfellow, code=302)
 
 #@APP.route("/cookie_dump") #XXX: nuke this function when it's no longer useful
 #def cookie_dump():
@@ -58,6 +87,11 @@ def add_link():
     longfellow = request.args.get("long", None)
     shorty = request.args.get("short", None)
     #owner = #TODO: ... however I get the user's identity ...
+
+    if not _verify_url(longfellow):
+        return json.dumps([{"success" : False,
+            "error" : "Invalid URL"}])
+
     if shorty == None or longfellow == None:
         raise KeyError
 
