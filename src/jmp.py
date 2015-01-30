@@ -14,6 +14,8 @@ from sqlalchemy import create_engine
 from flask import Flask, redirect, request
 import json
 
+from re import match
+
 BASE = declarative_base()
 
 class Link(BASE):
@@ -32,26 +34,41 @@ ENGINE = create_engine("sqlite:///jmp.db") #read this in from config
 BASE.metadata.create_all(ENGINE)
 
 ALLOWED_PROTOCOLS = ("http://", "https://", "ftp://",)
-MAX_URL_SIZE = 2048
+SUPPORTED_SHORT_RE = r"^\w+$"
+MAX_LONGFELLOW_SIZE = 2048
+MAX_SHORT_SIZE = 140
 
 DBSESSION = sessionmaker(bind=ENGINE)
 
-def _verify_url(url):
+def _verify_long(longfellow):
     """
-    Verify a URL to be valid and of a supported protocol
+    Verify a longfellow (URL) to be valid and of a supported protocol
     """
 
-    if len(url) > MAX_URL_SIZE:
+    if len(longfellow) > MAX_LONGFELLOW_SIZE:
         return False
 
     supported_proto = False
 
     for proto in ALLOWED_PROTOCOLS:
-        if url.startswith(proto):
+        if longfellow.startswith(proto):
             supported_proto = True
             break
 
     if not supported_proto:
+        return False
+
+    return True
+
+def _verify_short(shorty):
+    """
+    Verify a short (JMP extension, effectively) to be valid
+    """
+
+    if len(shorty) > MAX_SHORT_SIZE:
+        return False
+
+    if match(SUPPORTED_SHORT_RE, shorty) == None:
         return False
 
     return True
@@ -88,7 +105,11 @@ def add_link():
     shorty = request.args.get("short", None)
     #owner = #TODO: ... however I get the user's identity ...
 
-    if not _verify_url(longfellow):
+    if not _verify_short(shorty):
+        return json.dumps([{"success" : False,
+            "error" : "Invalid short"}])
+
+    if not _verify_long(longfellow):
         return json.dumps([{"success" : False,
             "error" : "Invalid URL"}])
 
