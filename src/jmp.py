@@ -85,7 +85,8 @@ def redir(short):
     """
     rows = _lookup(shorty=short, longfellow=None)
     if rows[0]["success"] == False or len(rows[0]["results"]) == 0:
-        raise KeyError #TODO: instead, redirect to creation page
+        return json.dumps([{"success" : False,
+            "error" : "Nonexistent short. You should create it!"}])
 
     longfellow = rows[0]["results"][0][2] #TODO: this is fugly. fix it.
     return redirect(longfellow, code=302)
@@ -101,9 +102,8 @@ def redir(short):
 def add_link():
     """
     A method to add an entry to the links table.
-
-    If shorty and longfellow aren't provided, throw a KeyError because why not?
     """
+
     #XXX: AUTHENTICATE FOR THIS METHOD
     longfellow = request.args.get("long", None)
     shorty = request.args.get("short", None)
@@ -118,7 +118,8 @@ def add_link():
             "error" : "Invalid URL"}])
 
     if shorty == None or longfellow == None:
-        raise KeyError
+        return json.dumps([{"success" : False,
+            "error" : "Incomplete request"}])
 
     try:
         session = DBSESSION()
@@ -135,15 +136,15 @@ def add_link():
 def rm_link():
     """
     A method to remove an entry from the links table.
-
-    If shorty and longfellow aren't provided, throw a KeyError because why not?
     """
+
     #XXX: AUTHENTICATE FOR THIS METHOD
     longfellow = request.args.get("long", None)
     shorty = request.args.get("short", None)
     #user = #TODO: ... however I get the user's identity ...
-    if shorty == None or longfellow == None: #throw bad request
-        raise KeyError
+    if shorty == None or longfellow == None:
+        return json.dumps([{"success" : False,
+            "error" : "Incomplete request"}])
 
     try:
         session = DBSESSION()
@@ -180,8 +181,9 @@ def _lookup(shorty, longfellow):
     The muscle behind the /query route and, by extension, the lookup method
     """
 
-    if shorty == None and longfellow == None: #TODO: throw bad request
-        raise KeyError
+    if shorty == None and longfellow == None:
+        return [{"success" : False,
+            "error" : "Incomplete request"}]
 
     try:
         session = DBSESSION()
