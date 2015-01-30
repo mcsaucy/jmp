@@ -34,6 +34,7 @@ ENGINE = create_engine("sqlite:///jmp.db") #read this in from config
 BASE.metadata.create_all(ENGINE)
 
 ALLOWED_PROTOCOLS = ("http://", "https://", "ftp://",)
+RESERVED_SHORTS = ("api",)
 SUPPORTED_SHORT_RE = r"^\w+$"
 MAX_LONGFELLOW_SIZE = 2048
 MAX_SHORT_SIZE = 140
@@ -71,6 +72,9 @@ def _verify_short(shorty):
     if match(SUPPORTED_SHORT_RE, shorty) == None:
         return False
 
+    if shorty in RESERVED_SHORTS: #It'd be awkward if we stomped on /api...
+        return False
+
     return True
 
 
@@ -80,7 +84,7 @@ def redir(short):
     Redirect the user to a longfellow given a shorty
     """
     rows = _lookup(shorty=short, longfellow=None)
-    if len(rows) == 0:
+    if rows[0]["success"] == False or len(rows[0]["results"]) == 0:
         raise KeyError #TODO: instead, redirect to creation page
 
     longfellow = rows[0]["results"][0][2] #TODO: this is fugly. fix it.
@@ -93,7 +97,7 @@ def redir(short):
 #    """
 #    return str(request.cookies.items())
 
-@APP.route("/new")
+@APP.route("/api/new")
 def add_link():
     """
     A method to add an entry to the links table.
@@ -127,7 +131,7 @@ def add_link():
         return json.dumps([{"success" : False,
             "error" : exception.args}])
 
-@APP.route("/delete")
+@APP.route("/api/delete")
 def rm_link():
     """
     A method to remove an entry from the links table.
@@ -160,22 +164,10 @@ def rm_link():
         return json.dumps([{"success" : False,
             "error" : exception.args}])
 
-@APP.route("/query")
+@APP.route("/api/query")
 def lookup():
     """
-    A generalized lookup wrapper method for entries in the links table based on
-    request arguments.
-
-    Looks up a row in the links tables and returns the columns in the following
-    manner:
-
-    If given 'short' and 'long', then return an ID.
-
-    If just given 'short', then return a longfellow and an ID.
-
-    If just given 'long', then return a shorty and an ID.
-
-    If given nothing, explode with a key error.
+    A generalized lookup wrapper method for entries in the links table
     """
 
     longfellow = request.args.get("long", None)
@@ -218,7 +210,7 @@ def _lookup(shorty, longfellow):
         return [{"success" : False,
             "error" : exception.args}]
 
-@APP.route("/dump") #TODO: remove this route entirely
+@APP.route("/api/dump") #TODO: remove this route entirely
 def dump():
     """
     Dump the DB contents. Not really a great thing to have in prod...
