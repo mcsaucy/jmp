@@ -244,7 +244,7 @@ def _lookup(shorty, longfellow):
 
     if shorty == None and longfellow == None:
         return [{"success" : False,
-            "error" : "Incomplete request"}]
+            "error" : "Incomplete request"}], 400
 
     try:
         session = DBSESSION()
@@ -268,7 +268,7 @@ def _lookup(shorty, longfellow):
                             ) for link in ret]
 
         return [{"success" : True,
-                 "results" : serializable_ret}], 200
+            "results" : serializable_ret}], 200
     except exc.SQLAlchemyError as exception:
         return [{"success" : False,
             "error" : exception.args}], 500
@@ -288,7 +288,7 @@ def dump():
                             ) for link in ret]
 
         return json.dumps([{"success" : True,
-                 "results" : serializable_ret}])
+            "results" : serializable_ret}])
     except exc.SQLAlchemyError as exception:
         return json.dumps([{"success" : False,
             "error" : exception.args}]), 500
