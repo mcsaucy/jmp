@@ -85,6 +85,9 @@ def _verify_long(longfellow):
     Verify a longfellow (URL) to be valid and of a supported protocol
     """
 
+    if longfellow == None:
+        return False
+
     if len(longfellow) > MAX_LONGFELLOW_SIZE:
         return False
 
@@ -104,6 +107,9 @@ def _verify_short(shorty):
     """
     Verify a short (JMP extension, effectively) to be valid
     """
+
+    if shorty == None:
+        return False
 
     if len(shorty) > MAX_SHORT_SIZE:
         return False
@@ -148,12 +154,16 @@ def add_link():
     shorty = request.args.get("short", None)
     #entry_uuid = request.environ.get("X-WEBAUTH-ENTRYUUID", None) #XXX
     entry_uuid = DUMMY_UUID
-    
+
     if entry_uuid == None:
         return json.dumps([{"success" : False,
             "error" : "That's weird. You lack an entry-uuid..."}]), 418
 
     owner = hash_and_salt(entry_uuid)
+
+    if shorty == None or longfellow == None:
+        return json.dumps([{"success" : False,
+            "error" : "Incomplete request"}]), 400
 
     if not _verify_short(shorty):
         return json.dumps([{"success" : False,
@@ -162,10 +172,6 @@ def add_link():
     if not _verify_long(longfellow):
         return json.dumps([{"success" : False,
             "error" : "Invalid URL"}]), 400
-
-    if shorty == None or longfellow == None:
-        return json.dumps([{"success" : False,
-            "error" : "Incomplete request"}]), 400
 
     try:
         session = DBSESSION()
