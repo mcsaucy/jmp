@@ -297,7 +297,8 @@ def dump():
 
         serializable_ret = [(link.link_id,
                              link.shorty,
-                             link.longfellow
+                             link.longfellow,
+                             link.owner
                             ) for link in ret]
 
         return json.dumps([{"success" : True,
