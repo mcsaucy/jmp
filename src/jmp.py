@@ -16,9 +16,49 @@ from sqlalchemy import create_engine
 
 from flask import Flask, redirect, request, jsonify
 
+from ConfigParser import RawConfigParser
+
 from re import match
 
+APP = Flask(__name__)
+
+ENGINE_URL = "sqlite:///jmp.db"
+
+ALLOWED_PROTOCOLS = ("http://", "https://", "ftp://",)
+RESERVED_SHORTS = ("api",)
+SUPPORTED_SHORT_RE = r"^\w+$"
+MAX_LONGFELLOW_SIZE = 2048
+MAX_SHORT_SIZE = 140
+
+SALT = "LOLMIGHTYSALTYINHERE!" #TODO: move this to a protected conf
+
+DUMMY_UUID = "EC865197-2C49-443A-8CB0-9A8870905C3C" #XXX: remove this
+DUMMY_USER = "jeid64"
+
+##############################################################################
+CONFIG = RawConfigParser()
+CONFIG.read("jmp.cfg")
+
+HOSTNAME = CONFIG.get("GENERAL", "HOSTNAME")
+ALLOWED_PROTOCOLS = CONFIG.get("RESTRICTIONS", "ALLOWED_PROTOCOLS")
+RESERVED_SHORTS = CONFIG.get("RESTRICTIONS", "RESERVED_SHORTS")
+SUPPORTED_SHORT_RE = CONFIG.get("RESTRICTIONS", "SUPPORTED_SHORT_RE")
+MAX_LONGFELLOW_SIZE = CONFIG.get("RESTRICTIONS", "MAX_LONGFELLOW_SIZE")
+MAX_SHORT_SIZE = CONFIG.get("RESTRICTIONS", "MAX_SHORT_SIZE")
+
+#TODO: ensure jmp.secure.cfg is actually secure
+CONFIG.read("jmp.secure.cfg")
+
+ENGINE_URL = CONFIG.get("DATABASE", "ENGINE_URL")
+USER_ID = CONFIG.get("AUTH", "USER_ID")
+USER_DISPLAY_NAME = CONFIG.get("AUTH", "USER_DISPLAY_NAME")
+SALT = CONFIG.get("AUTH", "SALT")
+
+ENGINE = create_engine(ENGINE_URL)
 BASE = declarative_base()
+BASE.metadata.create_all(ENGINE)
+DBSESSION = sessionmaker(bind=ENGINE)
+
 
 class Link(BASE):
     """
@@ -30,24 +70,6 @@ class Link(BASE):
     shorty = Column(String(256), nullable=False, unique=True)
     longfellow = Column(String(2048), nullable=False)
     owner = Column(String(len(sha256("").hexdigest())), nullable=False)
-
-APP = Flask(__name__)
-
-ENGINE = create_engine("sqlite:///jmp.db") #read this in from config
-BASE.metadata.create_all(ENGINE)
-
-ALLOWED_PROTOCOLS = ("http://", "https://", "ftp://",)
-RESERVED_SHORTS = ("api",)
-SUPPORTED_SHORT_RE = r"^\w+$"
-MAX_LONGFELLOW_SIZE = 2048
-MAX_SHORT_SIZE = 140
-
-ENTRY_UUID_HASH = "LOLMIGHTYSALTYINHERE!" #TODO: move this to a protected conf
-
-DUMMY_UUID = "EC865197-2C49-443A-8CB0-9A8870905C3C" #XXX: remove this
-DUMMY_USER = "jeid64"
-
-DBSESSION = sessionmaker(bind=ENGINE)
 
 def req_auth_api(func):
     """
@@ -71,9 +93,9 @@ def req_auth_api(func):
         return func(*args, **kwargs)
     return auth_decor
 
-def hash_and_salt(plain, salt=ENTRY_UUID_HASH):
+def hash_and_salt(plain, salt=SALT):
     """
-    Designed to be used for entry-uuid hashing, return a sha256 hash of 'plain'
+    Designed to be used for user identifiers, return a sha256 hash of 'plain'
     after applying 'salt'
     """
 
