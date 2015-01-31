@@ -45,6 +45,9 @@ MAX_SHORT_SIZE = 140
 
 ENTRY_UUID_HASH = "LOLMIGHTYSALTYINHERE!" #TODO: move this to a protected conf
 
+DUMMY_UUID = "EC865197-2C49-443A-8CB0-9A8870905C3C" #XXX: remove this
+DUMMY_USER = "jeid64"
+
 DBSESSION = sessionmaker(bind=ENGINE)
 
 def req_auth_api(func):
@@ -58,8 +61,10 @@ def req_auth_api(func):
         bail out.
         """
 
-        entry_uuid = request.environ.get("X-WEBAUTH-ENTRYUUID", None)
-        username = request.environ.get("X-WEBAUTH-USERNAME", None)
+        #entry_uuid = request.environ.get("X-WEBAUTH-ENTRYUUID", None) #XXX
+        #username = request.environ.get("X-WEBAUTH-USERNAME", None) #XXX
+        entry_uuid = DUMMY_UUID
+        username = DUMMY_USER
 
         if entry_uuid == None or username == None:
             return json.dumps([{"success" : False,
@@ -141,8 +146,9 @@ def add_link():
 
     longfellow = request.args.get("long", None)
     shorty = request.args.get("short", None)
-    entry_uuid = request.environ.get("X-WEBAUTH-ENTRYUUID", None)
-
+    #entry_uuid = request.environ.get("X-WEBAUTH-ENTRYUUID", None) #XXX
+    entry_uuid = DUMMY_UUID
+    
     if entry_uuid == None:
         return json.dumps([{"success" : False,
             "error" : "That's weird. You lack an entry-uuid..."}]), 418
@@ -186,7 +192,8 @@ def rm_link():
         return json.dumps([{"success" : False,
             "error" : "Incomplete request"}]), 400
 
-    entry_uuid = request.environ.get("X-WEBAUTH-ENTRYUUID", None)
+    #entry_uuid = request.environ.get("X-WEBAUTH-ENTRYUUID", None) #XXX
+    entry_uuid = DUMMY_UUID
 
     if entry_uuid == None:
         return json.dumps([{"success" : False,
