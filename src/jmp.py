@@ -179,9 +179,9 @@ def add_link():
         session.commit()
 
         return jsonify(success=True)
-    except exc.IntegrityError as exception:
+    except exc.IntegrityError:
         return jsonify(success=False,
-            error=exception.args), 400
+            error="short already exists"), 400
 
 @APP.route("/api/delete")
 @req_auth_api
