@@ -14,8 +14,7 @@ from sqlalchemy import exc
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy import create_engine
 
-from flask import Flask, redirect, request
-import json
+from flask import Flask, redirect, request, jsonify
 
 from re import match
 
@@ -67,8 +66,8 @@ def req_auth_api(func):
         username = DUMMY_USER
 
         if entry_uuid == None or username == None:
-            return json.dumps([{"success" : False,
-                "error" : "Authentication required"}]), 401
+            return jsonify(success=False,
+                error="Authentication required"), 401
         return func(*args, **kwargs)
     return auth_decor
 
@@ -129,11 +128,11 @@ def redir(short):
     Redirect the user to a longfellow given a shorty
     """
     rows = _lookup(shorty=short, longfellow=None)
-    if rows[0]["success"] == False or len(rows[0]["results"]) == 0:
-        return json.dumps([{"success" : False,
-            "error" : "Nonexistent short. You should create it!"}]), 404
+    if rows["success"] == False or len(rows["results"]) == 0:
+        return jsonify(success=False,
+            error="Nonexistent short. You should create it!"), 404
 
-    longfellow = rows[0]["results"][0][2] #TODO: this is fugly. fix it.
+    longfellow = rows["results"][0][2] #TODO: this is fugly. fix it.
     return redirect(longfellow, code=302)
 
 #@APP.route("/cookie_dump") #XXX: nuke this function when it's no longer useful
@@ -156,22 +155,22 @@ def add_link():
     entry_uuid = DUMMY_UUID
 
     if entry_uuid == None:
-        return json.dumps([{"success" : False,
-            "error" : "That's weird. You lack an entry-uuid..."}]), 418
+        return jsonify(success=False,
+            error="BUG! Someone horked the auth decorator..."), 418
 
     owner = hash_and_salt(entry_uuid)
 
     if shorty == None or longfellow == None:
-        return json.dumps([{"success" : False,
-            "error" : "Incomplete request"}]), 400
+        return jsonify(success=False,
+            error="Incomplete request"), 400
 
     if not _verify_short(shorty):
-        return json.dumps([{"success" : False,
-            "error" : "Invalid short"}]), 400
+        return jsonify(success=False,
+            error="Invalid short"), 400
 
     if not _verify_long(longfellow):
-        return json.dumps([{"success" : False,
-            "error" : "Invalid URL"}]), 400
+        return jsonify(success=False,
+            error="Invalid URL"), 400
 
     try:
         session = DBSESSION()
@@ -179,10 +178,10 @@ def add_link():
         session.add(new_link)
         session.commit()
 
-        return json.dumps([{"success" : True}])
+        return jsonify(success=True)
     except exc.IntegrityError as exception:
-        return json.dumps([{"success" : False,
-            "error" : exception.args}]), 400
+        return jsonify(success=False,
+            error=exception.args), 400
 
 @APP.route("/api/delete")
 @req_auth_api
@@ -195,15 +194,15 @@ def rm_link():
     shorty = request.args.get("short", None)
 
     if shorty == None or longfellow == None:
-        return json.dumps([{"success" : False,
-            "error" : "Incomplete request"}]), 400
+        return jsonify(success=False,
+            error="Incomplete request"), 400
 
     #entry_uuid = request.environ.get("X-WEBAUTH-ENTRYUUID", None) #XXX
     entry_uuid = DUMMY_UUID
 
     if entry_uuid == None:
-        return json.dumps([{"success" : False,
-            "error" : "That's weird. You lack an entry-uuid..."}]), 418
+        return jsonify(success=False,
+            error="BUG! Someone horked the auth decorator..."), 418
 
     owner = hash_and_salt(entry_uuid)
 
@@ -225,19 +224,19 @@ def rm_link():
         if not at_least_one_link:
             #Just in case we ever want to extend the schema to allow separation
             #of privately and publicly shared links
-            return json.dumps([{"success" : False,
-                "error" : "Link not found"}]), 404
+            return jsonify(success=False,
+                error="Link not found"), 404
 
         if not link_deleted:
-            return json.dumps([{"success" : False,
-                "error" : "Keep your hands to yourself"}]), 403
+            return jsonify(success=False,
+                error="Keep your hands to yourself"), 403
 
         session.commit()
-        return json.dumps([{"success" : True}])
+        return jsonify(success=True)
 
     except exc.SQLAlchemyError as exception:
-        return json.dumps([{"success" : False,
-            "error" : exception.args}]), 500
+        return jsonify(success=False,
+            error=exception.args), 500
 
 @APP.route("/api/query")
 def lookup():
@@ -248,7 +247,7 @@ def lookup():
     longfellow = request.args.get("long", None)
     shorty = request.args.get("short", None)
 
-    return json.dumps(_lookup(shorty, longfellow))
+    return jsonify(**_lookup(shorty, longfellow))
 
 def _lookup(shorty, longfellow):
     """
@@ -256,8 +255,8 @@ def _lookup(shorty, longfellow):
     """
 
     if shorty == None and longfellow == None:
-        return [{"success" : False,
-            "error" : "Incomplete request"}], 400
+        return {"success" : False,
+            "error" : "Incomplete request"}
 
     try:
         session = DBSESSION()
@@ -280,11 +279,11 @@ def _lookup(shorty, longfellow):
                              link.longfellow
                             ) for link in ret]
 
-        return [{"success" : True,
-            "results" : serializable_ret}], 200
+        return {"success" : True,
+            "results" : serializable_ret}
     except exc.SQLAlchemyError as exception:
-        return [{"success" : False,
-            "error" : exception.args}], 500
+        return {"success" : False,
+            "error" : exception.args}
 
 @APP.route("/api/dump") #TODO: remove this route entirely
 def dump():
@@ -301,11 +300,11 @@ def dump():
                              link.owner
                             ) for link in ret]
 
-        return json.dumps([{"success" : True,
-            "results" : serializable_ret}])
+        return jsonify(success=True,
+            results=serializable_ret)
     except exc.SQLAlchemyError as exception:
-        return json.dumps([{"success" : False,
-            "error" : exception.args}]), 500
+        return jsonify(success=False,
+            error=exception.args), 500
 
 if __name__ == "__main__":
     APP.run(debug=True)
