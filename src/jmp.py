@@ -105,13 +105,16 @@ def req_auth_api(func):
         return func(*args, **kwargs)
     return auth_decor
 
-def hash_and_salt(plain, salt=SALT):
+def hash_and_salt(user, resource, salt=SALT):
     """
-    Designed to be used for user identifiers, return a sha256 hash of 'plain'
-    after applying 'salt'
+    Designed to be used for resource owner identifiers, returns a SHA-256 hash
     """
 
-    return sha256("{0}|{1}".format(plain, salt)).hexdigest()
+    return sha256("{0}{1}{2}".format(
+        sha256(user).digest(),
+        sha256(resource).digest(),
+        sha256(salt).digest())
+        ).hexdigest()
 
 def _verify_long(longfellow):
     """
@@ -191,11 +194,11 @@ def add_link():
         return jsonify(success=False,
             error="BUG! Someone horked the auth decorator..."), 418
 
-    owner = hash_and_salt(user_id)
-
     if shorty == None or longfellow == None:
         return jsonify(success=False,
             error="Incomplete request"), 400
+    owner = hash_and_salt(user_id, shorty)
+
 
     if not _verify_short(shorty):
         return jsonify(success=False,
@@ -236,7 +239,7 @@ def rm_link():
         return jsonify(success=False,
             error="BUG! Someone horked the auth decorator..."), 418
 
-    owner = hash_and_salt(user_id)
+    owner = hash_and_salt(user_id, shorty)
 
     try:
         session = DBSESSION()
