@@ -172,13 +172,6 @@ def redir(short):
     longfellow = rows["results"][0][2] #TODO: this is fugly. fix it.
     return redirect(longfellow, code=302)
 
-#@APP.route("/cookie_dump") #XXX: nuke this function when it's no longer useful
-#def cookie_dump():
-#    """
-#    Take a look into the cookie jar. None of this is saved.
-#    """
-#    return str(request.cookies.items())
-
 @APP.route("/api/new")
 @req_auth_api
 def add_link():
