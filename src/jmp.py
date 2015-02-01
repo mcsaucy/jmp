@@ -22,17 +22,6 @@ from re import match
 
 APP = Flask(__name__)
 
-ENGINE_URL = "sqlite:///jmp.db"
-
-ALLOWED_PROTOCOLS = ("http://", "https://", "ftp://",)
-RESERVED_SHORTS = ("api",)
-SUPPORTED_SHORT_RE = r"^\w+$"
-MAX_LONGFELLOW_SIZE = 2048
-MAX_SHORT_SIZE = 140
-
-
-##############################################################################
-
 DEFAULT_CONFIG_VALUES = {
         "HOSTNAME" : "localhost",
         "ENGINE_URL" : "sqlite:///jmp.db",
@@ -54,8 +43,8 @@ CONFIG = RawConfigParser(DEFAULT_CONFIG_VALUES)
 CONFIG.read(["jmp.cfg", "../jmp.cfg", "jmp.secure.cfg", "../jmp.secure.cfg"])
 
 HOSTNAME = CONFIG.get("GENERAL", "HOSTNAME")
-ALLOWED_PROTOCOLS = CONFIG.get("RESTRICTIONS", "ALLOWED_PROTOCOLS")
-RESERVED_SHORTS = CONFIG.get("RESTRICTIONS", "RESERVED_SHORTS")
+ALLOWED_PROTOCOLS = CONFIG.get("RESTRICTIONS", "ALLOWED_PROTOCOLS").split(",")
+RESERVED_SHORTS = CONFIG.get("RESTRICTIONS", "RESERVED_SHORTS").split(",")
 SUPPORTED_SHORT_RE = CONFIG.get("RESTRICTIONS", "SUPPORTED_SHORT_RE")
 MAX_LONGFELLOW_SIZE = CONFIG.getint("RESTRICTIONS", "MAX_LONGFELLOW_SIZE")
 MAX_SHORT_SIZE = CONFIG.getint("RESTRICTIONS", "MAX_SHORT_SIZE")
@@ -65,12 +54,8 @@ USER_ID = CONFIG.get("AUTH", "USER_ID")
 USER_DISPLAY_NAME = CONFIG.get("AUTH", "USER_DISPLAY_NAME")
 SALT = CONFIG.get("AUTH", "SALT")
 
-print ENGINE_URL
-ENGINE = create_engine(ENGINE_URL)
 BASE = declarative_base()
-BASE.metadata.create_all(ENGINE)
-DBSESSION = sessionmaker(bind=ENGINE)
-
+ENGINE = create_engine(ENGINE_URL)
 
 class Link(BASE):
     """
@@ -82,6 +67,9 @@ class Link(BASE):
     shorty = Column(String(256), nullable=False, unique=True)
     longfellow = Column(String(2048), nullable=False)
     owner = Column(String(len(sha256("").hexdigest())), nullable=False)
+
+BASE.metadata.create_all(ENGINE)
+DBSESSION = sessionmaker(bind=ENGINE)
 
 def _get_user_id(req_env):
     """
