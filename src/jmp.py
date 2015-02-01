@@ -30,30 +30,42 @@ SUPPORTED_SHORT_RE = r"^\w+$"
 MAX_LONGFELLOW_SIZE = 2048
 MAX_SHORT_SIZE = 140
 
-SALT = "LOLMIGHTYSALTYINHERE!" #TODO: move this to a protected conf
-
-DUMMY_UUID = "EC865197-2C49-443A-8CB0-9A8870905C3C" #XXX: remove this
-DUMMY_USER = "jeid64"
 
 ##############################################################################
-CONFIG = RawConfigParser()
-CONFIG.read("jmp.cfg")
+
+DEFAULT_CONFIG_VALUES = {
+        "HOSTNAME" : "localhost",
+        "ENGINE_URL" : "sqlite:///jmp.db",
+        "ALLOWED_PROTOCOLS" : "http://,https://,ftp://",
+        "RESERVED_SHORTS" : "api",
+        "SUPPORTED_SHORT_RE" : r"^\w+$",
+        "MAX_LONGFELLOW_SIZE" : 2048,
+        "MAX_SHORT_SIZE" : 140,
+        "USER_ID" : "X-JMP-USER-ID",
+        "USER_DISPLAY_NAME" : "X-EMAIL-ADDR",
+        "SALT" : "LOLMIGHTYSALTYINHERE!"
+        }
+
+
+CONFIG = RawConfigParser(DEFAULT_CONFIG_VALUES)
+
+#TODO: ensure jmp.secure.cfg is actually secure
+#TODO; have better mechanism for locating config
+CONFIG.read(["jmp.cfg", "../jmp.cfg", "jmp.secure.cfg", "../jmp.secure.cfg"])
 
 HOSTNAME = CONFIG.get("GENERAL", "HOSTNAME")
 ALLOWED_PROTOCOLS = CONFIG.get("RESTRICTIONS", "ALLOWED_PROTOCOLS")
 RESERVED_SHORTS = CONFIG.get("RESTRICTIONS", "RESERVED_SHORTS")
 SUPPORTED_SHORT_RE = CONFIG.get("RESTRICTIONS", "SUPPORTED_SHORT_RE")
-MAX_LONGFELLOW_SIZE = CONFIG.get("RESTRICTIONS", "MAX_LONGFELLOW_SIZE")
-MAX_SHORT_SIZE = CONFIG.get("RESTRICTIONS", "MAX_SHORT_SIZE")
-
-#TODO: ensure jmp.secure.cfg is actually secure
-CONFIG.read("jmp.secure.cfg")
+MAX_LONGFELLOW_SIZE = CONFIG.getint("RESTRICTIONS", "MAX_LONGFELLOW_SIZE")
+MAX_SHORT_SIZE = CONFIG.getint("RESTRICTIONS", "MAX_SHORT_SIZE")
 
 ENGINE_URL = CONFIG.get("DATABASE", "ENGINE_URL")
 USER_ID = CONFIG.get("AUTH", "USER_ID")
 USER_DISPLAY_NAME = CONFIG.get("AUTH", "USER_DISPLAY_NAME")
 SALT = CONFIG.get("AUTH", "SALT")
 
+print ENGINE_URL
 ENGINE = create_engine(ENGINE_URL)
 BASE = declarative_base()
 BASE.metadata.create_all(ENGINE)
@@ -75,12 +87,14 @@ def _get_user_id(req_env):
     """
     Fish the configured user ID argument from request headers
     """
+    return "EC865197-2C49-443A-8CB0-9A8870905C3C" #XXX
     return req_env.get(USER_ID, None)
 
 def _get_user_dn(req_env):
     """
     Fish the configured user display name argument from request headers
     """
+    return "jeid64" #XXX
     return req_env.get(USER_DISPLAY_NAME, None)
 
 def req_auth_api(func):
