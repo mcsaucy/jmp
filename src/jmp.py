@@ -226,10 +226,9 @@ def rm_link():
     A method to remove an entry from the links table.
     """
 
-    longfellow = request.args.get("long", None)
     shorty = request.args.get("short", None)
 
-    if shorty == None or longfellow == None:
+    if shorty == None:
         return jsonify(success=False,
             error="Incomplete request"), 400
 
@@ -244,8 +243,7 @@ def rm_link():
     try:
         session = DBSESSION()
 
-        matching_links = session.query(Link).filter_by(
-                shorty=shorty, longfellow=longfellow)
+        matching_links = session.query(Link).filter_by(shorty=shorty)
 
         link_deleted = False
         at_least_one_link = False
