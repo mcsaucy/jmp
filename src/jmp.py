@@ -71,6 +71,18 @@ class Link(BASE):
     longfellow = Column(String(2048), nullable=False)
     owner = Column(String(len(sha256("").hexdigest())), nullable=False)
 
+def _get_user_id(req_env):
+    """
+    Fish the configured user ID argument from request headers
+    """
+    return req_env.get(USER_ID, None)
+
+def _get_user_dn(req_env):
+    """
+    Fish the configured user display name argument from request headers
+    """
+    return req_env.get(USER_DISPLAY_NAME, None)
+
 def req_auth_api(func):
     """
     A simple auth wrapper for API calls
@@ -78,16 +90,14 @@ def req_auth_api(func):
     @wraps(func)
     def auth_decor(*args, **kwargs):
         """
-        Pull in entry UUID and username from webauth. If either isn't provided,
-        bail out.
+        Pull in user id and user display name from headers.
+        If either isn't provided, bail out.
         """
 
-        #entry_uuid = request.environ.get("X-WEBAUTH-ENTRYUUID", None) #XXX
-        #username = request.environ.get("X-WEBAUTH-USERNAME", None) #XXX
-        entry_uuid = DUMMY_UUID
-        username = DUMMY_USER
+        user_id = _get_user_id(request.environ)
+        user_dn = _get_user_dn(request.environ)
 
-        if entry_uuid == None or username == None:
+        if user_id == None or user_dn == None:
             return jsonify(success=False,
                 error="Authentication required"), 401
         return func(*args, **kwargs)
@@ -173,14 +183,13 @@ def add_link():
 
     longfellow = request.args.get("long", None)
     shorty = request.args.get("short", None)
-    #entry_uuid = request.environ.get("X-WEBAUTH-ENTRYUUID", None) #XXX
-    entry_uuid = DUMMY_UUID
+    user_id = _get_user_id(request.environ)
 
-    if entry_uuid == None:
+    if user_id == None:
         return jsonify(success=False,
             error="BUG! Someone horked the auth decorator..."), 418
 
-    owner = hash_and_salt(entry_uuid)
+    owner = hash_and_salt(user_id)
 
     if shorty == None or longfellow == None:
         return jsonify(success=False,
@@ -219,14 +228,13 @@ def rm_link():
         return jsonify(success=False,
             error="Incomplete request"), 400
 
-    #entry_uuid = request.environ.get("X-WEBAUTH-ENTRYUUID", None) #XXX
-    entry_uuid = DUMMY_UUID
+    user_id = _get_user_id(request.environ)
 
-    if entry_uuid == None:
+    if user_id == None:
         return jsonify(success=False,
             error="BUG! Someone horked the auth decorator..."), 418
 
-    owner = hash_and_salt(entry_uuid)
+    owner = hash_and_salt(user_id)
 
     try:
         session = DBSESSION()
