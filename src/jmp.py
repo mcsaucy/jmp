@@ -311,6 +311,14 @@ def _lookup(shorty, longfellow):
         return {"success" : False,
             "error" : exception.args}
 
+@APP.route("/api")
+def found_the_api():
+	"""
+	Tell the user they found the /api route...
+	"""
+	return jsonify(success=False,
+		error="Yeah, there's an API."), 400
+
 @APP.route("/api/dump") #TODO: remove this route entirely
 def dump():
     """
@@ -333,4 +341,4 @@ def dump():
             error=exception.args), 500
 
 if __name__ == "__main__":
-    APP.run(debug=True)
+    APP.run(port=6889)
