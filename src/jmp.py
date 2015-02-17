@@ -312,6 +312,7 @@ def _lookup(shorty, longfellow):
             "error" : exception.args}
 
 @APP.route("/api")
+@APP.route("/api/")
 def found_the_api():
 	"""
 	Tell the user they found the /api route...
